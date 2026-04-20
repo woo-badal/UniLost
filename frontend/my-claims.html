@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Claims – Bennett University</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav id="mainNav"></nav>
+<div class="page-content">
+  <div class="page-header">
+    <h1>My Claim Requests</h1>
+    <p>Track the status of your submitted claims below.</p>
+  </div>
+
+  <div class="card">
+    <div id="claimsContent">
+      <div class="empty-state"><div class="empty-icon">⏳</div><h3>Loading...</h3></div>
+    </div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+  function onPageLoad() {
+    loadClaims();
+  }
+
+  function loadClaims() {
+    fetch('/api/claims').then(r => r.json()).then(claims => {
+      renderClaims(claims);
+    }).catch(() => {
+      document.getElementById('claimsContent').innerHTML =
+        '<div class="alert alert-error">Failed to load claims.</div>';
+    });
+  }
+
+  function renderClaims(claims) {
+    const el = document.getElementById('claimsContent');
+    if (claims.length === 0) {
+      el.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <h3>No claims submitted yet</h3>
+          <p>Browse found items and submit a claim if you recognise your belongings.</p>
+          <a href="index.html" class="btn btn-red" style="display:inline-block;margin-top:16px;text-decoration:none">Browse Items</a>
+        </div>`;
+      return;
+    }
+
+    el.innerHTML = `
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Item</th>
+            <th>Category</th>
+            <th>Hostel Room</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${claims.map(c => {
+            let statusClass = 'status-pending';
+            if (c.status === 'Approved') statusClass = 'status-available';
+            if (c.status === 'Rejected') statusClass = 'status-claimed';
+            return `<tr>
+              <td style="color:var(--muted)">#${c.claimId}</td>
+              <td><strong>${escHtml(c.itemName)}</strong></td>
+              <td><span class="cat-badge">${escHtml(c.itemCategory)}</span></td>
+              <td>${escHtml(c.hostelRoom)}</td>
+              <td><span class="${statusClass}">${c.status}</span></td>
+              <td><a href="item-detail.html?id=${c.itemId}" class="btn btn-outline btn-sm" style="text-decoration:none">View Item</a></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  function escHtml(s) {
+    if (!s) return '';
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  initStudentPage('claims');
+</script>
+</body>
+</html>

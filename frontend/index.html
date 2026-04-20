@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Found Items – Bennett University Lost & Found</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav id="mainNav"></nav>
+<div class="page-content">
+  <div class="page-header">
+    <h1>Found Items</h1>
+    <p>Browse items found on campus. Click an item for details or to file a claim.</p>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <input type="text" id="searchInput" placeholder="🔍 Search by name or description..." oninput="applyFilters()" />
+    <select id="catFilter" onchange="applyFilters()">
+      <option value="">All Categories</option>
+      <option>Watch</option><option>Phone</option><option>Chain</option>
+      <option>Wallet</option><option>Keys</option><option>Electronics</option>
+      <option>Bag</option><option>ID Card</option><option>Other</option>
+    </select>
+    <select id="locFilter" onchange="applyFilters()">
+      <option value="">All Locations</option>
+      <option>Library</option><option>Cafeteria</option><option>Sports Complex</option>
+      <option>Admin Block</option><option>Hostel</option><option>Classroom</option>
+      <option>Parking Lot</option><option>Other</option>
+    </select>
+    <button class="btn btn-grey btn-sm" onclick="clearFilters()">Clear</button>
+  </div>
+
+  <div id="itemsGrid" class="items-grid">
+    <div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-icon">⏳</div>
+      <h3>Loading items...</h3>
+    </div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+  let allItems = [];
+
+  function onPageLoad(session) {
+    loadItems();
+  }
+
+  /* Load found items from API */
+  function loadItems() {
+    fetch('/api/items').then(r => r.json()).then(items => {
+      allItems = items;
+      renderItems(items);
+    }).catch(() => {
+      document.getElementById('itemsGrid').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">❌</div><h3>Failed to load items</h3></div>';
+    });
+  }
+
+  /* Apply search and filter */
+  function applyFilters() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const cat = document.getElementById('catFilter').value;
+    const loc = document.getElementById('locFilter').value;
+    let filtered = allItems;
+    if (search) {
+      filtered = filtered.filter(i =>
+        i.name.toLowerCase().includes(search) ||
+        (i.description || '').toLowerCase().includes(search)
+      );
+    }
+    if (cat) filtered = filtered.filter(i => i.category === cat);
+    if (loc) filtered = filtered.filter(i => (i.location || '').toLowerCase().includes(loc.toLowerCase()));
+    renderItems(filtered);
+  }
+
+  function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('catFilter').value = '';
+    document.getElementById('locFilter').value = '';
+    renderItems(allItems);
+  }
+
+  /* Render items grid */
+  function renderItems(items) {
+    const grid = document.getElementById('itemsGrid');
+    if (items.length === 0) {
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📭</div><h3>No items found</h3><p>Try adjusting your filters</p></div>';
+      return;
+    }
+    grid.innerHTML = items.map(item => {
+      const img = item.imagePath
+        ? `<img src="/${item.imagePath}" class="item-card-img" alt="${item.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        : '';
+      const placeholder = `<div class="item-card-img-placeholder" ${item.imagePath?'style="display:none"':''}>${catEmoji(item.category)}</div>`;
+      let statusClass = 'status-available';
+      if (item.status === 'Claim Pending') statusClass = 'status-pending';
+      if (item.status === 'Claimed') statusClass = 'status-claimed';
+      return `
+        <a href="item-detail.html?id=${item.itemId}" class="item-card">
+          ${img}${placeholder}
+          <div class="item-card-body">
+            <div class="item-card-top">
+              <span class="item-card-title">${escHtml(item.name)}</span>
+              <span class="cat-badge">${escHtml(item.category)}</span>
+            </div>
+            <div class="item-card-meta">📍 ${escHtml(item.location || 'Unknown')}</div>
+            <div class="item-card-footer">
+              <span class="item-card-meta">🗓 ${formatDate(item.dateFound)}</span>
+              <span class="${statusClass}">${item.status}</span>
+            </div>
+          </div>
+        </a>`;
+    }).join('');
+  }
+
+  function escHtml(s) {
+    if (!s) return '';
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  initStudentPage('home');
+</script>
+</body>
+</html>

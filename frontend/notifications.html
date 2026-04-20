@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notifications – Bennett University</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .notif-list { display: flex; flex-direction: column; gap: 10px; }
+  .notif-item {
+    background: white;
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--border);
+    transition: border-color 0.2s;
+  }
+  .notif-item.unread { border-left-color: var(--red); background: #fff8f9; }
+  .notif-icon { font-size: 1.6rem; flex-shrink: 0; }
+  .notif-msg { font-size: 0.92rem; color: var(--text); line-height: 1.5; }
+  .notif-unread-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink: 0; margin-top: 6px; }
+</style>
+</head>
+<body>
+<nav id="mainNav"></nav>
+<div class="page-content">
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <h1>Notifications</h1>
+      <p>Updates about your claims and matching found items.</p>
+    </div>
+    <button class="btn btn-outline" onclick="markAllRead()">Mark All Read</button>
+  </div>
+
+  <div id="notifList">
+    <div class="empty-state"><div class="empty-icon">⏳</div><h3>Loading...</h3></div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+  function onPageLoad() {
+    loadNotifications();
+    /* Mark all read when page is opened */
+    fetch('/api/notifications/mark-read', {method:'POST'});
+  }
+
+  function loadNotifications() {
+    fetch('/api/notifications').then(r => r.json()).then(notifs => {
+      renderNotifs(notifs);
+    }).catch(() => {
+      document.getElementById('notifList').innerHTML =
+        '<div class="alert alert-error">Failed to load notifications.</div>';
+    });
+  }
+
+  function markAllRead() {
+    fetch('/api/notifications/mark-read', {method:'POST'}).then(() => {
+      loadNotifications();
+      /* Reset badge */
+      const badge = document.getElementById('notifBadge');
+      if (badge) badge.style.display = 'none';
+    });
+  }
+
+  function renderNotifs(notifs) {
+    const el = document.getElementById('notifList');
+    if (notifs.length === 0) {
+      el.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">🔔</div>
+          <h3>No notifications yet</h3>
+          <p>You'll be notified when items matching your lost reports are found.</p>
+        </div>`;
+      return;
+    }
+
+    el.innerHTML = '<div class="notif-list">' +
+      notifs.map(n => `
+        <div class="notif-item ${n.isRead ? '' : 'unread'}">
+          <div class="notif-icon">${n.isRead ? '🔔' : '🔴'}</div>
+          <div class="notif-msg">${escHtml(n.message)}</div>
+          ${!n.isRead ? '<div class="notif-unread-dot"></div>' : ''}
+        </div>`).join('') +
+      '</div>';
+  }
+
+  function escHtml(s) {
+    if (!s) return '';
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  initStudentPage('notifications');
+</script>
+</body>
+</html>

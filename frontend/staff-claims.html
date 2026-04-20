@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claim Requests – Staff Portal</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .filter-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .filter-tab { padding: 8px 18px; border-radius: 20px; border: 1.5px solid var(--border); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background: white; }
+  .filter-tab.active, .filter-tab:hover { background: var(--red); color: white; border-color: var(--red); }
+</style>
+</head>
+<body>
+<nav id="mainNav"></nav>
+<div class="page-content">
+  <div class="page-header">
+    <h1>Claim Requests</h1>
+    <p>Review submitted claims and approve or reject them.</p>
+  </div>
+
+  <div class="filter-tabs">
+    <button class="filter-tab active" onclick="filterClaims('all', this)">All</button>
+    <button class="filter-tab" onclick="filterClaims('Pending', this)">⏳ Pending</button>
+    <button class="filter-tab" onclick="filterClaims('Approved', this)">✅ Approved</button>
+    <button class="filter-tab" onclick="filterClaims('Rejected', this)">❌ Rejected</button>
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <div id="claimsContent">
+      <div class="empty-state"><div class="empty-icon">⏳</div><h3>Loading...</h3></div>
+    </div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+  let allClaims = [];
+  let activeFilter = 'all';
+
+  function onPageLoad() { loadClaims(); }
+
+  function loadClaims() {
+    fetch('/api/claims').then(r => r.json()).then(claims => {
+      allClaims = claims;
+      renderClaims(claims);
+    }).catch(() => {
+      document.getElementById('claimsContent').innerHTML =
+        '<div class="alert alert-error" style="margin:16px">Failed to load claims.</div>';
+    });
+  }
+
+  function filterClaims(status, btn) {
+    activeFilter = status;
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    const filtered = status === 'all' ? allClaims : allClaims.filter(c => c.status === status);
+    renderClaims(filtered);
+  }
+
+  function renderClaims(claims) {
+    const el = document.getElementById('claimsContent');
+    if (claims.length === 0) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><h3>No claims found</h3></div>`;
+      return;
+    }
+    el.innerHTML = `
+      <table class="data-table">
+        <thead>
+          <tr><th>#</th><th>Item</th><th>Student ID</th><th>Hostel Room</th><th>ID Card Details</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          ${claims.map(c => {
+            let sc = 'status-pending';
+            if (c.status==='Approved') sc='status-available';
+            if (c.status==='Rejected') sc='status-claimed';
+            const actions = c.status === 'Pending'
+              ? `<button class="btn btn-green btn-sm" onclick="approveClaim(${c.claimId})">Approve</button>
+                 <button class="btn btn-danger btn-sm" style="margin-left:6px" onclick="rejectClaim(${c.claimId})">Reject</button>`
+              : `<span style="color:var(--muted);font-size:0.82rem">${c.status}</span>`;
+            return `<tr id="claim-row-${c.claimId}">
+              <td style="color:var(--muted)">#${c.claimId}</td>
+              <td><strong>${escHtml(c.itemName)}</strong><br><span class="cat-badge">${escHtml(c.itemCategory)}</span></td>
+              <td><code>${escHtml(c.enrollmentId)}</code></td>
+              <td>${escHtml(c.hostelRoom)}</td>
+              <td style="max-width:200px;font-size:0.82rem;color:#555">${escHtml(c.idCardDetails)}</td>
+              <td><span class="${sc}">${c.status}</span></td>
+              <td>${actions}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  function approveClaim(claimId) {
+    if (!confirm('Approve this claim? The item will be marked as Claimed.')) return;
+    fetch('/api/claims/' + claimId + '/approve', {method:'POST'})
+      .then(r => r.json()).then(data => {
+        if (data.success) { loadClaims(); }
+        else alert(data.error || 'Failed to approve.');
+      });
+  }
+
+  function rejectClaim(claimId) {
+    if (!confirm('Reject this claim? The item will be returned to Available status.')) return;
+    fetch('/api/claims/' + claimId + '/reject', {method:'POST'})
+      .then(r => r.json()).then(data => {
+        if (data.success) { loadClaims(); }
+        else alert(data.error || 'Failed to reject.');
+      });
+  }
+
+  function escHtml(s) {
+    if (!s) return '';
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  initStaffPage('claims');
+</script>
+</body>
+</html>

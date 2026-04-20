@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staff Dashboard – Bennett University</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav id="mainNav"></nav>
+<div class="page-content">
+  <div class="page-header">
+    <h1>Staff Dashboard</h1>
+    <p>Lost &amp; Found Office — Bennett University</p>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card">
+      <div class="stat-icon">📦</div>
+      <div class="stat-info"><div class="stat-number" id="statTotal">—</div><div class="stat-label">Total Found Items</div></div>
+    </div>
+    <div class="stat-card" style="border-left-color:#22c55e">
+      <div class="stat-icon">✅</div>
+      <div class="stat-info"><div class="stat-number" id="statAvail">—</div><div class="stat-label">Available Items</div></div>
+    </div>
+    <div class="stat-card" style="border-left-color:#f59e0b">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-info"><div class="stat-number" id="statPending">—</div><div class="stat-label">Pending Claims</div></div>
+    </div>
+    <div class="stat-card" style="border-left-color:#9ca3af">
+      <div class="stat-icon">🏠</div>
+      <div class="stat-info"><div class="stat-number" id="statClaimed">—</div><div class="stat-label">Claimed Items</div></div>
+    </div>
+    <div class="stat-card" style="border-left-color:#3b82f6">
+      <div class="stat-icon">📝</div>
+      <div class="stat-info"><div class="stat-number" id="statLost">—</div><div class="stat-label">Lost Reports</div></div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="page-header" style="margin-top:8px"><h1 style="font-size:1.3rem">Quick Actions</h1></div>
+  <div class="quick-actions">
+    <a href="staff-upload.html" class="quick-action-btn">
+      <span class="qa-icon">📤</span><span class="qa-label">Upload Found Item</span>
+    </a>
+    <a href="staff-claims.html" class="quick-action-btn">
+      <span class="qa-icon">📋</span><span class="qa-label">Review Claims</span>
+    </a>
+    <a href="staff-lost-reports.html" class="quick-action-btn">
+      <span class="qa-icon">🔍</span><span class="qa-label">Lost Reports</span>
+    </a>
+    <a href="staff-items.html" class="quick-action-btn">
+      <span class="qa-icon">🗂️</span><span class="qa-label">Manage Items</span>
+    </a>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="page-header" style="margin-top:8px"><h1 style="font-size:1.3rem">Recent Uploads</h1></div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div id="recentTable">
+      <div class="empty-state"><div class="empty-icon">⏳</div><h3>Loading...</h3></div>
+    </div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+  function onPageLoad() {
+    loadDashboard();
+  }
+
+  function loadDashboard() {
+    fetch('/api/dashboard').then(r => r.json()).then(data => {
+      document.getElementById('statTotal').textContent = data.totalItems;
+      document.getElementById('statAvail').textContent = data.availableItems;
+      document.getElementById('statPending').textContent = data.pendingClaims;
+      document.getElementById('statClaimed').textContent = data.claimedItems;
+      document.getElementById('statLost').textContent = data.lostReports;
+      renderRecent(data.recentItems || []);
+    }).catch(() => {
+      document.getElementById('recentTable').innerHTML = '<div class="alert alert-error" style="margin:16px">Failed to load dashboard.</div>';
+    });
+  }
+
+  function renderRecent(items) {
+    const el = document.getElementById('recentTable');
+    if (items.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><h3>No items uploaded yet</h3></div>';
+      return;
+    }
+    el.innerHTML = `
+      <table class="data-table">
+        <thead>
+          <tr><th>ID</th><th>Item Name</th><th>Category</th><th>Date Found</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+          ${items.map(item => {
+            let sc = 'status-available';
+            if (item.status==='Claim Pending') sc = 'status-pending';
+            if (item.status==='Claimed') sc = 'status-claimed';
+            return `<tr>
+              <td style="color:var(--muted)">#${item.itemId}</td>
+              <td><strong>${escHtml(item.name)}</strong></td>
+              <td><span class="cat-badge">${escHtml(item.category)}</span></td>
+              <td>${formatDate(item.dateFound)}</td>
+              <td><span class="${sc}">${item.status}</span></td>
+              <td><a href="staff-items.html" class="btn btn-outline btn-sm" style="text-decoration:none">Manage</a></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  function escHtml(s) {
+    if (!s) return '';
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  initStaffPage('dashboard');
+</script>
+</body>
+</html>

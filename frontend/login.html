@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bennett University – Lost & Found</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --red: #C8102E; --dark: #1A1A2E; --white: #FFFFFF; --text: #2c2c2c; --muted: #888;
+  }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--dark);
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px;
+    background-image: radial-gradient(ellipse at 20% 50%, rgba(200,16,46,0.12) 0%, transparent 60%),
+                      radial-gradient(ellipse at 80% 20%, rgba(200,16,46,0.08) 0%, transparent 50%);
+  }
+  .logo-area { text-align: center; margin-bottom: 40px; }
+  .logo-text { font-family: 'Bebas Neue', cursive; font-size: 2.2rem; color: var(--white); letter-spacing: 3px; line-height: 1; }
+  .logo-sub { font-size: 0.8rem; color: var(--red); letter-spacing: 4px; text-transform: uppercase; font-weight: 600; margin-top: 4px; }
+  #roleScreen { width: 100%; max-width: 560px; }
+  .role-title { text-align: center; color: rgba(255,255,255,0.7); font-size: 1rem; margin-bottom: 28px; letter-spacing: 1px; text-transform: uppercase; font-weight: 500; }
+  .role-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .role-card { background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 36px 24px; cursor: pointer; text-align: center; transition: all 0.25s ease; color: var(--white); }
+  .role-card:hover { background: rgba(200,16,46,0.12); border-color: var(--red); transform: translateY(-4px); box-shadow: 0 12px 40px rgba(200,16,46,0.2); }
+  .role-icon { font-size: 3rem; margin-bottom: 14px; display: block; }
+  .role-label { font-size: 1.2rem; font-weight: 600; letter-spacing: 1px; }
+  .role-desc { font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 6px; }
+  #loginScreen { display: none; width: 100%; max-width: 420px; }
+  .login-card { background: var(--white); border-radius: 20px; padding: 40px 36px; box-shadow: 0 24px 80px rgba(0,0,0,0.5); }
+  .login-card h2 { font-family: 'Bebas Neue', cursive; font-size: 1.8rem; color: var(--dark); letter-spacing: 2px; margin-bottom: 4px; }
+  .login-card p { color: var(--muted); font-size: 0.9rem; margin-bottom: 28px; }
+  .form-group { margin-bottom: 18px; }
+  label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--text); margin-bottom: 6px; letter-spacing: 0.5px; }
+  input[type="text"], input[type="password"] { width: 100%; padding: 12px 14px; border: 1.5px solid #ddd; border-radius: 10px; font-size: 0.95rem; font-family: 'DM Sans', sans-serif; color: var(--text); outline: none; transition: border-color 0.2s; }
+  input:focus { border-color: var(--red); }
+  .btn-primary { width: 100%; padding: 13px; background: var(--red); color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; letter-spacing: 0.5px; margin-top: 8px; transition: background 0.2s, transform 0.1s; font-family: 'DM Sans', sans-serif; }
+  .btn-primary:hover { background: #a50d24; transform: translateY(-1px); }
+  .back-link { display: block; text-align: center; margin-top: 16px; color: rgba(255,255,255,0.6); font-size: 0.85rem; cursor: pointer; text-decoration: underline; }
+  .back-link:hover { color: white; }
+  .error-msg { background: #ffeaea; color: var(--red); border-left: 3px solid var(--red); padding: 10px 12px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 16px; display: none; }
+  .divider { text-align: center; margin: 14px 0 6px; font-size: 0.78rem; color: var(--muted); }
+  /* NEW - register link style */
+  .register-link { display: block; text-align: center; margin-top: 12px; font-size: 0.85rem; color: var(--muted); }
+  .register-link a { color: var(--red); font-weight: 600; text-decoration: none; }
+  .register-link a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="logo-area">
+  <div class="logo-text">Bennett University</div>
+  <div class="logo-sub">Lost &amp; Found Portal</div>
+</div>
+
+<!-- Role Selection -->
+<div id="roleScreen">
+  <p class="role-title">Who are you?</p>
+  <div class="role-cards">
+    <div class="role-card" onclick="showLogin('student')">
+      <span class="role-icon">🎓</span>
+      <div class="role-label">Student</div>
+      <div class="role-desc">Browse items, report losses &amp; claim belongings</div>
+    </div>
+    <div class="role-card" onclick="window.location.href='staff-login.html'">
+      <span class="role-icon">🏢</span>
+      <div class="role-label">Staff</div>
+      <div class="role-desc">Manage found items &amp; process claims</div>
+    </div>
+  </div>
+</div>
+
+<!-- Student Login -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h2>Student Login</h2>
+    <p>Enter your enrollment details to continue</p>
+    <div class="error-msg" id="errorMsg"></div>
+    <div class="form-group">
+      <label>Enrollment ID</label>
+      <input type="text" id="enrollmentId" placeholder="e.g. E21CSE001" />
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="Enter password" />
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Sign In</button>
+    <div class="divider">Demo: E21CSE001 / student123</div>
+    <!-- NEW - Register link -->
+    <div class="register-link">Don't have an account? <a href="register.html">Register here</a></div>
+  </div>
+  <a class="back-link" onclick="showRole()">← Back to role selection</a>
+</div>
+
+<script>
+  fetch('/api/session').then(r => r.json()).then(data => {
+    if (data.role === 'student') window.location.href = 'index.html';
+    if (data.role === 'staff') window.location.href = 'staff-dashboard.html';
+  }).catch(() => {});
+
+  function showLogin(role) {
+    document.getElementById('roleScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'block';
+  }
+
+  function showRole() {
+    document.getElementById('roleScreen').style.display = 'block';
+    document.getElementById('loginScreen').style.display = 'none';
+  }
+
+  function doLogin() {
+    const id = document.getElementById('enrollmentId').value.trim();
+    const pw = document.getElementById('password').value.trim();
+    const err = document.getElementById('errorMsg');
+    err.style.display = 'none';
+    if (!id || !pw) { showError('Please fill in all fields.'); return; }
+    fetch('/api/login/student', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: 'enrollmentId=' + encodeURIComponent(id) + '&password=' + encodeURIComponent(pw)
+    }).then(r => r.json()).then(data => {
+      if (data.success) window.location.href = 'index.html';
+      else showError(data.error || 'Login failed.');
+    }).catch(() => showError('Server error. Try again.'));
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = msg; el.style.display = 'block';
+  }
+
+  document.addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
+</script>
+</body>
+</html>

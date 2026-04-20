@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upload Found Item – Staff Portal</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 36px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: var(--grey);
+  }
+  .upload-zone:hover, .upload-zone.drag-over { border-color: var(--red); background: #fff8f9; }
+  .upload-zone .upload-icon { font-size: 3rem; display: block; margin-bottom: 10px; }
+  .upload-zone p { color: var(--muted); font-size: 0.88rem; }
+  .img-preview { max-width: 100%; max-height: 220px; border-radius: 10px; margin-top: 12px; display: none; }
+</style>
+</head>
+<body>
+<nav id="mainNav"></nav>
+<div class="page-content">
+  <div class="page-header">
+    <h1>Upload Found Item</h1>
+    <p>Add a new item to the Lost &amp; Found catalogue.</p>
+  </div>
+
+  <div class="form-card" style="max-width:720px">
+    <div id="formMsg"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Item Name *</label>
+        <input type="text" id="name" placeholder="e.g. Black Leather Wallet" />
+      </div>
+      <div class="form-group">
+        <label>Category *</label>
+        <select id="category">
+          <option value="">Select category</option>
+          <option>Watch</option><option>Phone</option><option>Chain</option>
+          <option>Wallet</option><option>Keys</option><option>Electronics</option>
+          <option>Bag</option><option>ID Card</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="description" placeholder="Describe colour, brand, condition, distinguishing marks..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Location Found *</label>
+        <select id="location">
+          <option value="">Select location</option>
+          <option>Library</option><option>Cafeteria</option><option>Sports Complex</option>
+          <option>Admin Block</option><option>Hostel</option><option>Classroom</option>
+          <option>Parking Lot</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Date Found *</label>
+        <input type="date" id="dateFound" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Item Photo</label>
+      <div class="upload-zone" onclick="document.getElementById('imageFile').click()"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleDrop(event)">
+        <span class="upload-icon">📷</span>
+        <p>Click to upload or drag &amp; drop an image</p>
+        <p style="font-size:0.78rem;margin-top:4px">JPG, PNG, WEBP accepted</p>
+        <img id="imgPreview" class="img-preview" alt="Preview" />
+      </div>
+      <input type="file" id="imageFile" accept="image/*" style="display:none" onchange="previewImage(event)" />
+    </div>
+    <div style="display:flex;gap:12px;margin-top:8px">
+      <button class="btn btn-red" onclick="submitItem()">Upload Item</button>
+      <a href="staff-dashboard.html" class="btn btn-grey" style="text-decoration:none">Cancel</a>
+    </div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+  document.getElementById('dateFound').valueAsDate = new Date();
+
+  function onPageLoad() {}
+
+  function previewImage(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = document.getElementById('imgPreview');
+      img.src = e.target.result;
+      img.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleDrop(event) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
+    const file = event.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      const input = document.getElementById('imageFile');
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      previewImage({target: {files: [file]}});
+    }
+  }
+
+  function submitItem() {
+    const name = document.getElementById('name').value.trim();
+    const category = document.getElementById('category').value;
+    const description = document.getElementById('description').value.trim();
+    const location = document.getElementById('location').value;
+    const dateFound = document.getElementById('dateFound').value;
+    const fileInput = document.getElementById('imageFile');
+    const msgEl = document.getElementById('formMsg');
+
+    if (!name || !category || !location || !dateFound) {
+      msgEl.innerHTML = '<div class="alert alert-error">Please fill in all required fields (*).</div>';
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('category', category);
+    formData.append('description', description);
+    formData.append('location', location);
+    formData.append('dateFound', dateFound);
+    if (fileInput.files.length > 0) {
+      formData.append('image', fileInput.files[0]);
+    }
+
+    msgEl.innerHTML = '<div class="alert alert-info">⏳ Uploading item...</div>';
+
+    fetch('/api/items', {method: 'POST', body: formData})
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          let msg = '✅ Item uploaded successfully!';
+          if (data.notified > 0) msg += ` ${data.notified} student(s) notified of a potential match.`;
+          msgEl.innerHTML = '<div class="alert alert-success">' + msg + '</div>';
+          /* Reset form */
+          document.getElementById('name').value = '';
+          document.getElementById('category').value = '';
+          document.getElementById('description').value = '';
+          document.getElementById('location').value = '';
+          document.getElementById('dateFound').valueAsDate = new Date();
+          document.getElementById('imageFile').value = '';
+          document.getElementById('imgPreview').style.display = 'none';
+        } else {
+          msgEl.innerHTML = '<div class="alert alert-error">' + (data.error || 'Upload failed.') + '</div>';
+        }
+      }).catch(() => {
+        msgEl.innerHTML = '<div class="alert alert-error">Server error. Please try again.</div>';
+      });
+  }
+
+  initStaffPage('upload');
+</script>
+</body>
+</html>

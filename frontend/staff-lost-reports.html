@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lost Reports – Staff Portal</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav id="mainNav"></nav>
+<div class="page-content">
+  <div class="page-header">
+    <h1>Lost Item Reports</h1>
+    <p>All lost item reports submitted by students.</p>
+  </div>
+
+  <div class="filter-bar">
+    <input type="text" id="searchInput" placeholder="🔍 Search by name or student ID..." oninput="applyFilter()" style="min-width:240px" />
+    <select id="catFilter" onchange="applyFilter()">
+      <option value="">All Categories</option>
+      <option>Watch</option><option>Phone</option><option>Chain</option>
+      <option>Wallet</option><option>Keys</option><option>Electronics</option>
+      <option>Bag</option><option>ID Card</option><option>Other</option>
+    </select>
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <div id="reportsContent">
+      <div class="empty-state"><div class="empty-icon">⏳</div><h3>Loading...</h3></div>
+    </div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+  let allReports = [];
+
+  function onPageLoad() { loadReports(); }
+
+  function loadReports() {
+    fetch('/api/lost-reports').then(r => r.json()).then(reports => {
+      allReports = reports;
+      renderReports(reports);
+    }).catch(() => {
+      document.getElementById('reportsContent').innerHTML =
+        '<div class="alert alert-error" style="margin:16px">Failed to load reports.</div>';
+    });
+  }
+
+  function applyFilter() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const cat = document.getElementById('catFilter').value;
+    let filtered = allReports;
+    if (search) filtered = filtered.filter(r =>
+      r.itemName.toLowerCase().includes(search) ||
+      r.enrollmentId.toLowerCase().includes(search)
+    );
+    if (cat) filtered = filtered.filter(r => r.category === cat);
+    renderReports(filtered);
+  }
+
+  function renderReports(reports) {
+    const el = document.getElementById('reportsContent');
+    if (reports.length === 0) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">📝</div><h3>No reports found</h3></div>`;
+      return;
+    }
+    el.innerHTML = `
+      <table class="data-table">
+        <thead>
+          <tr><th>#</th><th>Item Name</th><th>Category</th><th>Student ID</th><th>Last Seen</th><th>Date Lost</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          ${reports.map(r => `<tr>
+            <td style="color:var(--muted)">#${r.reportId}</td>
+            <td><strong>${escHtml(r.itemName)}</strong></td>
+            <td><span class="cat-badge">${escHtml(r.category)}</span></td>
+            <td><code>${escHtml(r.enrollmentId)}</code></td>
+            <td>${escHtml(r.location || '—')}</td>
+            <td>${formatDate(r.dateLost)}</td>
+            <td style="max-width:220px;font-size:0.82rem;color:#555">${escHtml(r.description || '—')}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  function escHtml(s) {
+    if (!s) return '';
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  initStaffPage('lostReports');
+</script>
+</body>
+</html>

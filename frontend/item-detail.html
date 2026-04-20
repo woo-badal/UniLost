@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Item Detail – Bennett University Lost & Found</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+  .detail-img-wrap { border-radius: 16px; overflow: hidden; background: #f0f0f0; box-shadow: var(--shadow-lg); }
+  .detail-img-wrap img { width: 100%; height: 360px; object-fit: cover; display: block; }
+  .detail-img-placeholder { width: 100%; height: 360px; display: flex; align-items: center; justify-content: center; font-size: 6rem; background: linear-gradient(135deg, #f0f0f0, #e5e5e5); }
+  .detail-info h2 { font-family: 'Bebas Neue', cursive; font-size: 2.2rem; letter-spacing: 2px; color: var(--dark); margin-bottom: 12px; line-height: 1.1; }
+  .detail-meta { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; }
+  .detail-meta-row { display: flex; gap: 8px; align-items: center; font-size: 0.92rem; }
+  .detail-meta-label { font-weight: 600; color: var(--muted); min-width: 100px; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .detail-desc { background: var(--grey); border-radius: 10px; padding: 14px 16px; font-size: 0.92rem; line-height: 1.6; color: #444; margin: 16px 0; }
+  .claim-form-wrap { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); }
+  .claim-form-wrap h3 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; color: var(--dark); }
+  .claimed-notice { background: #f3f4f6; border-radius: 10px; padding: 16px; text-align: center; color: var(--muted); }
+  .claimed-notice .icon { font-size: 2rem; display: block; margin-bottom: 6px; }
+  @media (max-width: 768px) { .detail-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<nav id="mainNav"></nav>
+<div class="page-content">
+  <div style="margin-bottom:20px">
+    <a href="index.html" style="color:var(--red);text-decoration:none;font-size:0.9rem;font-weight:600">← Back to Browse</a>
+  </div>
+  <div id="detailContent">
+    <div class="empty-state"><div class="empty-icon">⏳</div><h3>Loading...</h3></div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+  let currentItem = null;
+
+  function onPageLoad(session) {
+    const params = new URLSearchParams(window.location.search);
+    const itemId = params.get('id');
+    if (!itemId) { window.location.href = 'index.html'; return; }
+    loadItem(itemId);
+  }
+
+  function loadItem(itemId) {
+    fetch('/api/items/' + itemId).then(r => r.json()).then(item => {
+      currentItem = item;
+      renderDetail(item);
+    }).catch(() => {
+      document.getElementById('detailContent').innerHTML =
+        '<div class="alert alert-error">Failed to load item. <a href="index.html">Go back</a></div>';
+    });
+  }
+
+  function renderDetail(item) {
+    let statusClass = 'status-available';
+    if (item.status === 'Claim Pending') statusClass = 'status-pending';
+    if (item.status === 'Claimed') statusClass = 'status-claimed';
+
+    const imgHtml = item.imagePath
+      ? `<img src="/${item.imagePath}" alt="${escHtml(item.name)}" onerror="this.style.display='none';document.getElementById('imgPlaceholder').style.display='flex'">`
+      : '';
+    const placeholderStyle = item.imagePath ? 'style="display:none"' : '';
+
+    let claimSection = '';
+    if (item.status === 'Available') {
+      claimSection = `
+        <div class="claim-form-wrap">
+          <h3>🙋 Claim This Item</h3>
+          <div id="claimMsg"></div>
+          <div class="form-group">
+            <label>Hostel Room Number</label>
+            <input type="text" id="hostelRoom" placeholder="e.g. H1-201" />
+          </div>
+          <div class="form-group">
+            <label>ID Card Details (Name + ID Number)</label>
+            <textarea id="idCardDetails" placeholder="Enter your full name and student ID details as on your ID card..."></textarea>
+          </div>
+          <button class="btn btn-red" onclick="submitClaim()">Submit Claim Request</button>
+        </div>`;
+    } else if (item.status === 'Claim Pending') {
+      claimSection = `
+        <div class="claim-form-wrap">
+          <div class="claimed-notice">
+            <span class="icon">⏳</span>
+            <strong>Claim Under Review</strong>
+            <p>A claim has been submitted for this item. Please check back later.</p>
+          </div>
+        </div>`;
+    } else if (item.status === 'Claimed') {
+      claimSection = `
+        <div class="claim-form-wrap">
+          <div class="claimed-notice">
+            <span class="icon">✅</span>
+            <strong>Item Claimed</strong>
+            <p>This item has been returned to its owner.</p>
+          </div>
+        </div>`;
+    }
+
+    document.getElementById('detailContent').innerHTML = `
+      <div class="detail-grid">
+        <div>
+          <div class="detail-img-wrap">
+            ${imgHtml}
+            <div class="detail-img-placeholder" id="imgPlaceholder" ${placeholderStyle}>${catEmoji(item.category)}</div>
+          </div>
+        </div>
+        <div class="detail-info card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span class="cat-badge" style="font-size:0.82rem">${escHtml(item.category)}</span>
+            <span class="${statusClass}">${item.status}</span>
+          </div>
+          <h2>${escHtml(item.name)}</h2>
+          <div class="detail-meta">
+            <div class="detail-meta-row">
+              <span class="detail-meta-label">📍 Location</span>
+              <span>${escHtml(item.location || 'Not specified')}</span>
+            </div>
+            <div class="detail-meta-row">
+              <span class="detail-meta-label">🗓 Date Found</span>
+              <span>${formatDate(item.dateFound)}</span>
+            </div>
+          </div>
+          ${item.description ? `<div class="detail-desc">${escHtml(item.description)}</div>` : ''}
+          ${claimSection}
+        </div>
+      </div>`;
+  }
+
+  function submitClaim() {
+    const hostelRoom = document.getElementById('hostelRoom').value.trim();
+    const idCardDetails = document.getElementById('idCardDetails').value.trim();
+    const msgEl = document.getElementById('claimMsg');
+    if (!hostelRoom || !idCardDetails) {
+      msgEl.innerHTML = '<div class="alert alert-error">Please fill in all fields.</div>';
+      return;
+    }
+    fetch('/api/claims', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: 'itemId=' + currentItem.itemId +
+            '&hostelRoom=' + encodeURIComponent(hostelRoom) +
+            '&idCardDetails=' + encodeURIComponent(idCardDetails)
+    }).then(r => r.json()).then(data => {
+      if (data.success) {
+        msgEl.innerHTML = '<div class="alert alert-success">✅ Claim submitted! Staff will review and notify you.</div>';
+        setTimeout(() => window.location.href = 'my-claims.html', 2000);
+      } else {
+        msgEl.innerHTML = '<div class="alert alert-error">' + (data.error || 'Claim failed.') + '</div>';
+      }
+    }).catch(() => {
+      msgEl.innerHTML = '<div class="alert alert-error">Server error. Try again.</div>';
+    });
+  }
+
+  function escHtml(s) {
+    if (!s) return '';
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  initStudentPage('home');
+</script>
+</body>
+</html>

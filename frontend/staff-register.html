@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staff Register – Bennett University Lost & Found</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --red: #C8102E; --dark: #1A1A2E; --white: #FFFFFF; --text: #2c2c2c; --muted: #888; --border: #ddd; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--dark);
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px;
+    background-image: radial-gradient(ellipse at 80% 50%, rgba(200,16,46,0.12) 0%, transparent 60%);
+  }
+  .logo-area { text-align: center; margin-bottom: 32px; }
+  .logo-text { font-family: 'Bebas Neue', cursive; font-size: 2.2rem; color: var(--white); letter-spacing: 3px; }
+  .logo-sub { font-size: 0.8rem; color: var(--red); letter-spacing: 4px; text-transform: uppercase; font-weight: 600; margin-top: 4px; }
+  .badge { display: inline-block; background: var(--red); color: white; font-size: 0.7rem; padding: 2px 10px; border-radius: 20px; letter-spacing: 1px; margin-top: 8px; font-weight: 600; }
+  .card { background: var(--white); border-radius: 20px; padding: 36px; box-shadow: 0 24px 80px rgba(0,0,0,0.5); width: 100%; max-width: 440px; }
+  .card h2 { font-family: 'Bebas Neue', cursive; font-size: 1.8rem; color: var(--dark); letter-spacing: 2px; margin-bottom: 4px; }
+  .card p { color: var(--muted); font-size: 0.88rem; margin-bottom: 24px; }
+  .form-group { margin-bottom: 16px; }
+  label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--text); margin-bottom: 5px; letter-spacing: 0.5px; }
+  input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 0.92rem; font-family: 'DM Sans', sans-serif; color: var(--text); outline: none; transition: border-color 0.2s; }
+  input:focus { border-color: var(--red); }
+  .btn { width: 100%; padding: 13px; background: var(--red); color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.2s; margin-top: 6px; }
+  .btn:hover { background: #a50d24; }
+  .msg { padding: 10px 12px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 14px; display: none; }
+  .msg.error { background: #ffeaea; color: var(--red); border-left: 3px solid var(--red); }
+  .msg.success { background: #f0fdf4; color: #16a34a; border-left: 3px solid #22c55e; }
+  .bottom-links { text-align: center; margin-top: 18px; }
+  .bottom-links a { color: rgba(255,255,255,0.65); font-size: 0.85rem; text-decoration: none; }
+  .bottom-links a:hover { color: white; }
+  .bottom-links span { color: rgba(255,255,255,0.3); margin: 0 8px; }
+  .secret-note { background: rgba(200,16,46,0.08); border: 1px solid rgba(200,16,46,0.2); border-radius: 8px; padding: 10px 12px; font-size: 0.8rem; color: #666; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+
+<div class="logo-area">
+  <div class="logo-text">Bennett University</div>
+  <div class="logo-sub">Lost &amp; Found Portal</div>
+  <div class="badge">🏢 STAFF REGISTRATION</div>
+</div>
+
+<div class="card">
+  <h2>Staff Register</h2>
+  <p>Create a Lost &amp; Found office staff account</p>
+  <div class="secret-note">🔒 A secret registration code is required to create staff accounts.</div>
+  <div class="msg" id="msg"></div>
+  <div class="form-group">
+    <label>Full Name</label>
+    <input type="text" id="name" placeholder="e.g. Rajesh Kumar" />
+  </div>
+  <div class="form-group">
+    <label>Staff ID</label>
+    <input type="text" id="staffId" placeholder="e.g. STAFF001" />
+  </div>
+  <div class="form-group">
+    <label>Password</label>
+    <input type="password" id="password" placeholder="Choose a password" />
+  </div>
+  <div class="form-group">
+    <label>Confirm Password</label>
+    <input type="password" id="confirmPassword" placeholder="Re-enter password" />
+  </div>
+  <div class="form-group">
+    <label>Secret Registration Code</label>
+    <input type="password" id="secretCode" placeholder="Enter the admin secret code" />
+  </div>
+  <button class="btn" onclick="doRegister()">Create Staff Account</button>
+</div>
+
+<div class="bottom-links">
+  <a href="staff-login.html">← Back to Staff Login</a>
+  <span>|</span>
+  <a href="register.html">Student Registration</a>
+</div>
+
+<script>
+  function doRegister() {
+    const name = document.getElementById('name').value.trim();
+    const staffId = document.getElementById('staffId').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const confirmPassword = document.getElementById('confirmPassword').value.trim();
+    const secretCode = document.getElementById('secretCode').value.trim();
+
+    if (!name || !staffId || !password || !confirmPassword || !secretCode) {
+      showMsg('Please fill in all fields.', 'error'); return;
+    }
+    if (password !== confirmPassword) {
+      showMsg('Passwords do not match.', 'error'); return;
+    }
+    if (password.length < 6) {
+      showMsg('Password must be at least 6 characters.', 'error'); return;
+    }
+
+    fetch('/api/register/staff', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'name=' + encodeURIComponent(name) +
+            '&staffId=' + encodeURIComponent(staffId) +
+            '&password=' + encodeURIComponent(password) +
+            '&secretCode=' + encodeURIComponent(secretCode)
+    }).then(r => r.json()).then(data => {
+      if (data.success) {
+        showMsg('✅ Staff account created! Redirecting to login...', 'success');
+        setTimeout(() => window.location.href = 'staff-login.html', 2000);
+      } else {
+        showMsg(data.error || 'Registration failed.', 'error');
+      }
+    }).catch(() => showMsg('Server error. Try again.', 'error'));
+  }
+
+  function showMsg(text, type) {
+    const el = document.getElementById('msg');
+    el.textContent = text;
+    el.className = 'msg ' + type;
+    el.style.display = 'block';
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(); });
+</script>
+</body>
+</html>

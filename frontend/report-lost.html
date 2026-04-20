@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Report Lost Item – Bennett University</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav id="mainNav"></nav>
+<div class="page-content">
+  <div class="page-header">
+    <h1>Report a Lost Item</h1>
+    <p>Tell us what you've lost. We'll notify you if a match is found.</p>
+  </div>
+
+  <div class="form-card">
+    <div id="formMsg"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Item Name *</label>
+        <input type="text" id="itemName" placeholder="e.g. Black Samsung Phone" />
+      </div>
+      <div class="form-group">
+        <label>Category *</label>
+        <select id="category">
+          <option value="">Select category</option>
+          <option>Watch</option><option>Phone</option><option>Chain</option>
+          <option>Wallet</option><option>Keys</option><option>Electronics</option>
+          <option>Bag</option><option>ID Card</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="description" placeholder="Describe the item — colour, brand, distinguishing marks..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Last Seen Location</label>
+        <select id="location">
+          <option value="">Select location</option>
+          <option>Library</option><option>Cafeteria</option><option>Sports Complex</option>
+          <option>Admin Block</option><option>Hostel</option><option>Classroom</option>
+          <option>Parking Lot</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Date Lost</label>
+        <input type="date" id="dateLost" />
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:8px">
+      <button class="btn btn-red" onclick="submitReport()">Submit Report</button>
+      <a href="index.html" class="btn btn-grey" style="text-decoration:none">Cancel</a>
+    </div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+  /* Set default date to today */
+  document.getElementById('dateLost').valueAsDate = new Date();
+
+  function onPageLoad() {}
+
+  function submitReport() {
+    const itemName = document.getElementById('itemName').value.trim();
+    const category = document.getElementById('category').value;
+    const description = document.getElementById('description').value.trim();
+    const location = document.getElementById('location').value;
+    const dateLost = document.getElementById('dateLost').value;
+    const msgEl = document.getElementById('formMsg');
+
+    if (!itemName || !category) {
+      msgEl.innerHTML = '<div class="alert alert-error">Please fill in item name and category.</div>';
+      return;
+    }
+
+    fetch('/api/lost-reports', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: 'itemName=' + encodeURIComponent(itemName) +
+            '&category=' + encodeURIComponent(category) +
+            '&description=' + encodeURIComponent(description) +
+            '&location=' + encodeURIComponent(location) +
+            '&dateLost=' + encodeURIComponent(dateLost)
+    }).then(r => r.json()).then(data => {
+      if (data.success) {
+        msgEl.innerHTML = '<div class="alert alert-success">✅ Lost report submitted! You\'ll be notified if a match is found.</div>';
+        document.getElementById('itemName').value = '';
+        document.getElementById('category').value = '';
+        document.getElementById('description').value = '';
+        document.getElementById('location').value = '';
+        setTimeout(() => window.location.href = 'index.html', 2500);
+      } else {
+        msgEl.innerHTML = '<div class="alert alert-error">' + (data.error || 'Submission failed.') + '</div>';
+      }
+    }).catch(() => {
+      msgEl.innerHTML = '<div class="alert alert-error">Server error. Please try again.</div>';
+    });
+  }
+
+  initStudentPage('report');
+</script>
+</body>
+</html>

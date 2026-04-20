@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manage Items – Staff Portal</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .item-thumb { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; background: #f0f0f0; }
+  .item-thumb-placeholder { width: 52px; height: 52px; border-radius: 8px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
+</style>
+</head>
+<body>
+<nav id="mainNav"></nav>
+<div class="page-content">
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <h1>Manage Items</h1>
+      <p>Edit status or remove found items from the system.</p>
+    </div>
+    <a href="staff-upload.html" class="btn btn-red" style="text-decoration:none">+ Upload New</a>
+  </div>
+
+  <div class="filter-bar">
+    <input type="text" id="searchInput" placeholder="🔍 Search items..." oninput="applyFilter()" style="min-width:200px" />
+    <select id="catFilter" onchange="applyFilter()">
+      <option value="">All Categories</option>
+      <option>Watch</option><option>Phone</option><option>Chain</option>
+      <option>Wallet</option><option>Keys</option><option>Electronics</option>
+      <option>Bag</option><option>ID Card</option><option>Other</option>
+    </select>
+    <select id="statusFilter" onchange="applyFilter()">
+      <option value="">All Statuses</option>
+      <option>Available</option>
+      <option>Claim Pending</option>
+      <option>Claimed</option>
+    </select>
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <div id="itemsContent">
+      <div class="empty-state"><div class="empty-icon">⏳</div><h3>Loading...</h3></div>
+    </div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+  let allItems = [];
+
+  function onPageLoad() { loadItems(); }
+
+  function loadItems() {
+    fetch('/api/items').then(r => r.json()).then(items => {
+      allItems = items;
+      renderItems(items);
+    }).catch(() => {
+      document.getElementById('itemsContent').innerHTML =
+        '<div class="alert alert-error" style="margin:16px">Failed to load items.</div>';
+    });
+  }
+
+  function applyFilter() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const cat = document.getElementById('catFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    let filtered = allItems;
+    if (search) filtered = filtered.filter(i => i.name.toLowerCase().includes(search));
+    if (cat) filtered = filtered.filter(i => i.category === cat);
+    if (status) filtered = filtered.filter(i => i.status === status);
+    renderItems(filtered);
+  }
+
+  function renderItems(items) {
+    const el = document.getElementById('itemsContent');
+    if (items.length === 0) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><h3>No items found</h3></div>`;
+      return;
+    }
+    el.innerHTML = `
+      <table class="data-table">
+        <thead>
+          <tr><th>Photo</th><th>Item</th><th>Category</th><th>Location</th><th>Date Found</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          ${items.map(item => {
+            const imgHtml = item.imagePath
+              ? `<img src="/${item.imagePath}" class="item-thumb" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+              : '';
+            const placeholderStyle = item.imagePath ? 'style="display:none"' : '';
+            let sc = 'status-available';
+            if (item.status==='Claim Pending') sc='status-pending';
+            if (item.status==='Claimed') sc='status-claimed';
+            return `<tr id="item-row-${item.itemId}">
+              <td>
+                ${imgHtml}
+                <div class="item-thumb-placeholder" ${placeholderStyle}>${catEmoji(item.category)}</div>
+              </td>
+              <td><strong>${escHtml(item.name)}</strong></td>
+              <td><span class="cat-badge">${escHtml(item.category)}</span></td>
+              <td>${escHtml(item.location || '—')}</td>
+              <td>${formatDate(item.dateFound)}</td>
+              <td>
+                <select onchange="changeStatus(${item.itemId}, this.value)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:0.82rem;font-family:'DM Sans',sans-serif">
+                  <option ${item.status==='Available'?'selected':''}>Available</option>
+                  <option ${item.status==='Claim Pending'?'selected':''}>Claim Pending</option>
+                  <option ${item.status==='Claimed'?'selected':''}>Claimed</option>
+                </select>
+              </td>
+              <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteItem(${item.itemId}, '${escHtml(item.name)}')">Delete</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  function changeStatus(itemId, status) {
+    fetch('/api/items/' + itemId + '/status', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: 'status=' + encodeURIComponent(status)
+    }).then(r => r.json()).then(data => {
+      if (!data.success) alert('Failed to update status.');
+      else loadItems();
+    });
+  }
+
+  function deleteItem(itemId, name) {
+    if (!confirm('Delete item "' + name + '"? This cannot be undone.')) return;
+    fetch('/api/items/' + itemId, {method: 'DELETE'})
+      .then(r => r.json()).then(data => {
+        if (data.success) loadItems();
+        else alert('Failed to delete item.');
+      });
+  }
+
+  function escHtml(s) {
+    if (!s) return '';
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  initStaffPage('items');
+</script>
+</body>
+</html>
